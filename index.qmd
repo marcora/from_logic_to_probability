@@ -10,38 +10,30 @@ execute:
 
 ## Propositional logic
 
-Propositional logic is a language used to represent knowledge and reason about the truth or falsity of propositions.
+Propositional logic is a language used to represent knowledge and reason with statements that are either true or false (i.e., have a truth value; propositions).
 
-An intelligent agent uses propositional logic to draw conclusions from a set of known facts (propositions). For example, given the propositions $P \rightarrow Q$ (If it is raining, then the street is wet) and $P$ (It is raining), the agent can infer $Q$ (The street is wet) using Modus Ponens. This logical reasoning allows the agent to make decisions, predict outcomes, and understand the relationships between different pieces of knowledge.
+Probability theory extends propositional logic to represent knowledge and reason with propositions that have an uncertain truth value (probability).
 
-Propositional logic provides a foundation for more complex forms of logic, such as first-order logic, which incorporates quantifiers and predicates, enabling more detailed and nuanced representations of knowledge.
-
-Propositional logic also provides a foundation for probability theory, where logical propositions are assigned probabilities, allowing for reasoning under uncertainty/with incomplete information ("plausible/inductive reasoning"). This integration of logic and probability is essential for developing robust models in artificial intelligence and machine learning.
-
-Probability theory extends propositional logic to allow reasoning about the uncertainty of propositions.
+Inductive reasoning = reasoning with incomplete information.
 
 ## Propositional variables (aka atomic propositions)
 
-These are basic statements that can either be true or false. For example:
+These are statements that can either be true or false and do not have logical connectives. For example:
 
 -   $P$: *It is raining*
 -   $Q$: *The street is wet*
 
 ## Logical connectives (from atomic to compound propositions)
 
--   **AND** ($\land$): Conjunction, true if both operands are true
--   **OR** ($\lor$): Disjunction, true if at least one operand is true
--   **NOT** ($\lnot$): Negation, true if the operand is false
--   **IMPLIES** ($\implies$): Implication, true if the antecedent is false or the consequent is true
--   **IF AND ONLY IF** ($\iff$): Biconditional, true if both operands are either true or false
+-   **AND** ($\land$): Conjunction, true iff both operands are true
+-   **OR** ($\lor$): Disjunction, true iff at least one operand is true
+-   **NOT** ($\lnot$): Negation, true iff the operand is false
+-   **IMPLIES** ($\implies$): Implication, true iff the antecedent is false or the consequent is true
+-   **IF AND ONLY IF** ($\iff$): Biconditional, true iff both operands are either true or false
 
 ## Truth tables
 
-A tool used to determine the truth value of complex propositions based on the truth values of their atomic components.
-
-## Inference rules for valid arguments
-
-Rules that allow the derivation of new propositions from existing ones. Common rules include Modus Ponens and Modus Tollens.
+A tool used to determine the truth value of a compound proposition based on the truth values of the atomic propositions it is made of.
 
 ## Propositional logic
 
@@ -423,7 +415,7 @@ $P(H \mid E) = \frac{M}{N}$
 
 ## Probability distributions
 
-### Binomial Probability
+### Binomial
 
 Given:
 
@@ -436,7 +428,7 @@ Given:
 -   The probability of $K$ successes given the binomial evidence and number of trials can be written as:
 
 $$
-P(K = k \mid E_B, N = n) = \binom{n}{k} p^k (1 - p)^{n - k}
+P(K = k \mid \Pi = \pi, N = n, E_B) = \binom{n}{k} \pi^k (1 - \pi)^{n - k}
 $$
 
 where:
@@ -467,14 +459,82 @@ probability <- binom_coeff * p^k * (1 - p)^(n - k)
 probability
 ```
 
-### Explanation
+```{r}
+S <- expand_grid(
+  X1 = c(TRUE, FALSE),
+  X2 = c(TRUE, FALSE),
+  X3 = c(TRUE, FALSE),
+  X4 = c(TRUE, FALSE),
+  X5 = c(TRUE, FALSE),
+  X6 = c(TRUE, FALSE),
+  X7 = c(TRUE, FALSE),
+  X8 = c(TRUE, FALSE),
+  X9 = c(TRUE, FALSE),
+  X10 = c(TRUE, FALSE))
 
--   **(** \binom{n}{k} ): This is the binomial coefficient calculated as `choose(n, k)` in R.
--   **( p )**: Probability of success on a single trial. You can adjust this value based on your specific problem.
--   **( (1 - p) )**: Probability of failure on a single trial.
--   **The formula**: Multiplies the binomial coefficient by the probability of getting ( k ) successes and the probability of getting ( (n - k) ) failures.
+S
+```
 
-By executing the R code in an RMarkdown document, you will get the probability of observing exactly ( k ) successes in ( n ) trials given the specified probability of success.
+```{r}
+S %<>%
+  mutate(K = pmap_int(., sum))
+
+S
+```
+
+```{r}
+S %>% mutate(H = K == 3) %>% pull(H) %>% mean()
+```
+
+```{r}
+# Define parameters
+n <- 10  # number of trials
+p <- 0.5  # probability of success
+k <- 3 # Hypothesis: exactly k successes
+
+# Step 1: Generate all possible outcomes (truth table)
+trials <- expand.grid(rep(list(c(TRUE, FALSE)), n))
+colnames(trials) <- paste0("T", 1:n)
+
+# Step 2: Calculate the probability of each outcome
+# Function to calculate the probability of a specific outcome
+calculate_probability <- function(row, p) {
+  success_prob <- p ^ sum(row)  # Probability of successes
+  failure_prob <- (1 - p) ^ (length(row) - sum(row))  # Probability of failures
+  return(success_prob * failure_prob)
+}
+
+# Add a column for the probability of each outcome
+trials$Probability <- apply(trials, 1, calculate_probability, p = p)
+
+# Step 3: Specify the binomial evidence (number of successes)
+count_successes <- function(row) {
+  sum(row)
+}
+
+# Add a column for the number of successes
+trials$Successes <- apply(trials, 1, count_successes)
+
+# Step 4: Derive the probability of the hypothesis (e.g., exactly k successes)
+
+# Filter for rows that match the hypothesis
+matching_rows <- trials %>% filter(Successes == k)
+
+# Calculate the probability of the hypothesis
+probability <- sum(matching_rows$Probability)
+
+# Print results
+print(trials)
+print(paste("Probability of exactly", k, "successes:", probability))
+
+# Visualize the binomial distribution
+barplot(table(trials$Successes) / nrow(trials), 
+        names.arg = 0:n, 
+        xlab = "Number of successes", 
+        ylab = "Probability",
+        main = paste("Binomial Distribution (n =", n, ", p =", p, ")"), 
+        col = "blue")
+```
 
 ## References
 
